@@ -1,4 +1,6 @@
 # skyscanner-contentful-management
+[![Build Status](https://travis-ci.org/Skyscanner/skyscanner-contentful-management.svg?branch=master)](https://travis-ci.org/Skyscanner/skyscanner-contentful-management)
+
 ## Installation
 This is published as a PyPi package and can be installed with pip.
 
