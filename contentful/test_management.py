@@ -195,7 +195,23 @@ def test_stream_bad_json(mocker):
     assert 'JSONDecodeError' in out['exception']
 
 
-def test_when_streaming_429s_are_retried(mocker):
+@pytest.mark.parametrize(
+    'status_codes,expected_codes,expected_retries,expected_sleeps',
+    [
+        # Succeed first time:
+        ([200], [200], [False], []),
+        # One retry:
+        ([429,200], [429,200], [True,False], [1]),
+        # Maximum retries:
+        ([429,429,429,429,429,200], [429,429,429,429,429,200], [True,True,True,True,True,False], [1,4,16,64,256]),
+        # Too many retries:
+        ([429,429,429,429,429,429,200], [429] * 6, [True,True,True,True,True,False], [1,4,16,64,256]),
+        # Too many retries:
+        ([429]*20 + [200], [429] * 6, [True,True,True,True,True,False], [1,4,16,64,256]),
+    ]
+)
+def test_when_streaming_429s_are_retried(
+        mocker, status_codes, expected_codes, expected_retries, expected_sleeps):
     # Define a sample endpoint using the API subdomain
     endpoint_spec = management.Endpoint('sample', 'get', 'api', '/sample', '')
     endpoint = management.construct_endpoint(endpoint_spec)
@@ -207,10 +223,8 @@ def test_when_streaming_429s_are_retried(mocker):
     session = mocker.Mock()
 
     session.request.side_effect = [
-        FakeResponse(status_code=429),
-        FakeResponse(status_code=429),
-        FakeResponse(status_code=429),
-        FakeResponse(status_code=200)
+        FakeResponse(status_code=code)
+        for code in status_codes
     ]
 
     # Make a full request
@@ -230,14 +244,12 @@ def test_when_streaming_429s_are_retried(mocker):
     logged_objects = [l[0][0] for l in echo_output.call_args_list]
     sleep_times = [l[0][0] for l in sleep.call_args_list]
 
-    # Should have made 4 attempts:
-    assert len(session.request.call_args_list) == 4
     assert (
         [obj['retrying'] for obj in logged_objects] == 
-        [True, True, True, False]
+        expected_retries
     )
     assert (
         [obj['status_code'] for obj in logged_objects] == 
-        [429, 429, 429, 200]
+        expected_codes
     )
-    assert sleep_times == [1, 4, 16]
+    assert sleep_times == expected_sleeps
