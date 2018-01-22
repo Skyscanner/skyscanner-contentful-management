@@ -34,9 +34,11 @@ config['base_url']['upload'] = 'https://fakeupload'
 
 
 class FakeResponse:
-    text = ''
-    url = ''
-    status_code = 0
+    def __init__(self, text='', url='', status_code=0, headers=None):
+        self.text = text
+        self.url = url
+        self.status_code = status_code
+        self.headers = {} if headers is None else headers
 
 
 def test_contruct_api_url(mocker):
@@ -191,3 +193,63 @@ def test_stream_bad_json(mocker):
     out = json.loads(proc.stdout)
 
     assert 'JSONDecodeError' in out['exception']
+
+
+@pytest.mark.parametrize(
+    'status_codes,expected_codes,expected_retries,expected_sleeps',
+    [
+        # Succeed first time:
+        ([200], [200], [False], []),
+        # One retry:
+        ([429,200], [429,200], [True,False], [1]),
+        # Maximum retries:
+        ([429,429,429,429,429,200], [429,429,429,429,429,200], [True,True,True,True,True,False], [1,4,16,64,256]),
+        # Too many retries:
+        ([429,429,429,429,429,429,200], [429] * 6, [True,True,True,True,True,False], [1,4,16,64,256]),
+        # Too many retries:
+        ([429]*20 + [200], [429] * 6, [True,True,True,True,True,False], [1,4,16,64,256]),
+    ]
+)
+def test_when_streaming_429s_are_retried(
+        mocker, status_codes, expected_codes, expected_retries, expected_sleeps):
+    # Define a sample endpoint using the API subdomain
+    endpoint_spec = management.Endpoint('sample', 'get', 'api', '/sample', '')
+    endpoint = management.construct_endpoint(endpoint_spec)
+
+    # Patch configuration overriding
+    mocker.patch.object(endpoint, 'construct_config', return_value=config)
+
+    # Create a mocked out Requests session
+    session = mocker.Mock()
+
+    session.request.side_effect = [
+        FakeResponse(status_code=code)
+        for code in status_codes
+    ]
+
+    # Make a full request
+    echo_output = mocker.patch('contentful.management.echo_output')
+    sleep = mocker.patch('time.sleep')
+
+    endpoint.invoke_streaming(
+        ctx=None,
+        arguments={},
+        session=session,
+        oauth_token="test-key",
+        gateway_api_key="",
+        echo_to_stdout=False,
+        log_file=None,
+        retry=True,
+        run=True)
+    logged_objects = [l[0][0] for l in echo_output.call_args_list]
+    sleep_times = [l[0][0] for l in sleep.call_args_list]
+
+    assert (
+        [obj['retrying'] for obj in logged_objects] == 
+        expected_retries
+    )
+    assert (
+        [obj['status_code'] for obj in logged_objects] == 
+        expected_codes
+    )
+    assert sleep_times == expected_sleeps

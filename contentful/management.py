@@ -46,6 +46,22 @@ def convert_response_to_json(response):
     return obj
 
 
+def get_response_rate_limit_info(response):
+    def get_header(name):
+        string_value = response.headers.get('X-Contentful-RateLimit-' + name)
+        try:
+            return int(string_value)
+        except (TypeError, ValueError):
+            return None
+    return {
+        'hour_limit': get_header('Hour-Limit'),
+        'hour_remaining': get_header('Hour-Remaining'),
+        'second_limit': get_header('Second-Limit'),
+        'second_remaining': get_header('Second-Remaining'),
+        'reset': get_header('Reset'),
+    }
+
+
 def echo_output(obj, echo_to_stdout, log_file):
     s = json.dumps(obj)
     print(s, file=log_file, flush=True)
@@ -157,6 +173,7 @@ class FakeResponse:
     text = ''
     url = ''
     status_code = 0
+    headers = {}
 
 class ContentfulEndpoint:
     def __init__(self,
@@ -254,10 +271,12 @@ class ContentfulEndpoint:
             log_entry['url'] = json_response['url']
             log_entry['status_code'] = json_response['status_code']
             log_entry['body'] = json_response['body']
+            log_entry['rate_limit'] = get_response_rate_limit_info(response)
         else:
             log_entry['url'] = None
             log_entry['status_code'] = None
             log_entry['body'] = None
+            log_entry['rate_limit'] = None
         if exception is not None:
             log_entry['exception'] = repr(exception)
         else:
@@ -297,12 +316,13 @@ class ContentfulEndpoint:
         if not (200 <= response.status_code < 300):
             ctx.exit(2)
 
-    def invoke_streaming(self, ctx, arguments, session, oauth_token, gateway_api_key, echo_to_stdout, log_file, run=True):
-        max_attempts = 4
+    def invoke_streaming(self, ctx, arguments, session, oauth_token, gateway_api_key, echo_to_stdout, log_file, retry, run=True):
+        max_attempts = 6 if retry else 1
 
         try:
             if self.is_dangerous:
                 raise Exception('Operation not supported in streaming mode')
+
 
             for attempt in range(max_attempts):
                 response = self.invoke(arguments, session, oauth_token, gateway_api_key, run)
@@ -312,6 +332,13 @@ class ContentfulEndpoint:
                 should_retry = (
                     retrying_allowed_for_status_code and
                     not last_attempt)
+
+                wait_time = 4 ** attempt # 1s, 4s, 16s, 64s, 256s, ...
+
+                if should_retry and response.status_code == 429:
+                    ratelimit_wait_time = get_response_rate_limit_info(response)['reset'] or 0
+                    if ratelimit_wait_time is not None and ratelimit_wait_time + 1 > wait_time:
+                        wait_time = ratelimit_wait_time + 1
 
                 self.log_operation_result(
                     response=response,
@@ -324,7 +351,7 @@ class ContentfulEndpoint:
                 if not should_retry:
                     break
 
-                time.sleep(5 * 2 ** attempt) # 5s, 10s, 20s, ...
+                time.sleep(wait_time)
         except Exception as e:
             self.log_operation_result(
                 exception=e, arguments=arguments, echo_to_stdout=echo_to_stdout, log_file=log_file, attempt=attempt, retrying=False)
@@ -442,12 +469,13 @@ for endpoint_spec in CONTENTFUL_ENDPOINTS:
 @cli.command('stream')
 @click.option('--oauth-token', envvar='CONTENTFUL_OAUTH_TOKEN')
 @click.option('--gateway-api-key', envvar='CONTENTFUL_GATEWAY_API_KEY', default=None)
+@click.option('--retry/--no-retry', default=False, help='Retry on 429/500 with incremental backoff')
 @click.option('--output-file', type=click.File('wt'), default=sys.stdout)
 @click.option('--echo-log/--no-echo-log', default=False)
 @click.option('--run/--dry-run', default=False)
 @click.argument('stream-file', type=click.File('r'))
 @click.pass_context
-def stream(ctx, stream_file, oauth_token, gateway_api_key, output_file, echo_log, run):
+def stream(ctx, stream_file, oauth_token, gateway_api_key, output_file, echo_log, retry, run):
     session = requests.Session()
 
     for line in stream_file:
@@ -457,7 +485,7 @@ def stream(ctx, stream_file, oauth_token, gateway_api_key, output_file, echo_log
             for endpoint_spec in CONTENTFUL_ENDPOINTS:
                 if endpoint_spec.name == command_name:
                     construct_endpoint(endpoint_spec).invoke_streaming(
-                        ctx, command_obj.get('arguments', {}), session, oauth_token, gateway_api_key, echo_log, output_file, run)
+                        ctx, command_obj.get('arguments', {}), session, oauth_token, gateway_api_key, echo_log, output_file, retry, run)
                     break
             else:
                 echo_output({'error': 'Operation not recognized', 'operation': command_name}, echo_log, output_file)
