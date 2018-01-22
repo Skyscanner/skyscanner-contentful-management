@@ -175,6 +175,18 @@ def test_stream(mocker):
     assert out['body']['params'] == {'limit': None, 'skip': None}
     assert out['operation'] == 'list-content-types'
 
+def test_stream_with_data_argument(mocker):
+    stream_file = '{"operation":"post-entry","arguments":{"space_id":"test-space","content_type":"typename","document_body": {}}}'
+
+    proc = subprocess.run(['python', './contentful/management.py', 'stream', '-', '--dry-run'], input=stream_file, universal_newlines=True, stdout=subprocess.PIPE)
+
+    out = json.loads(proc.stdout)
+
+    assert out['url'] == 'https://api.contentful.com/spaces/test-space/entries/'
+    assert out['body']['params'] == {}
+    assert out['operation'] == 'post-entry'
+    assert out['body']['data'] == '{}'
+
 def test_stream_bad_command(mocker):
     stream_file = '{"operation":"obviously-fake-command","arguments":{}}'
 
