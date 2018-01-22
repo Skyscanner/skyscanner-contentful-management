@@ -37,6 +37,7 @@ class FakeResponse:
     text = ''
     url = ''
     status_code = 0
+    headers = {}
 
 
 def test_contruct_api_url(mocker):

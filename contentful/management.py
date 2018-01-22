@@ -46,6 +46,22 @@ def convert_response_to_json(response):
     return obj
 
 
+def get_response_rate_limit_info(response):
+    def get_header(name):
+        string_value = response.headers.get('X-Contentful-RateLimit-' + name)
+        try:
+            return int(string_value)
+        except (TypeError, ValueError):
+            return None
+    return {
+        'hour_limit': get_header('Hour-Limit'),
+        'hour_remaining': get_header('Hour-Remaining'),
+        'second_limit': get_header('Second-Limit'),
+        'second_remaining': get_header('Second-Remaining'),
+        'reset': get_header('Reset'),
+    }
+
+
 def echo_output(obj, echo_to_stdout, log_file):
     s = json.dumps(obj)
     print(s, file=log_file, flush=True)
@@ -157,6 +173,7 @@ class FakeResponse:
     text = ''
     url = ''
     status_code = 0
+    headers = {}
 
 class ContentfulEndpoint:
     def __init__(self,
@@ -254,10 +271,12 @@ class ContentfulEndpoint:
             log_entry['url'] = json_response['url']
             log_entry['status_code'] = json_response['status_code']
             log_entry['body'] = json_response['body']
+            log_entry['rate_limit'] = get_response_rate_limit_info(response)
         else:
             log_entry['url'] = None
             log_entry['status_code'] = None
             log_entry['body'] = None
+            log_entry['rate_limit'] = None
         if exception is not None:
             log_entry['exception'] = repr(exception)
         else:
