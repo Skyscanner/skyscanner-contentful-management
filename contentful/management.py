@@ -448,7 +448,7 @@ class ContentfulEndpoint:
             response.status_code = 000
             response.text = json.dumps({
                 'method': self.method,
-                'data': data,
+                'data': None if data is None else data.decode('utf-8', errors='surrogateescape'),
                 'headers': headers,
                 'params': params
             })
