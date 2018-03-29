@@ -163,12 +163,26 @@ def test_full_invoke(mocker):
     assert kwargs['params'] == {}
 
 
+def run_stream_command(stream_file):
+    return subprocess.run([
+            sys.executable,
+            './contentful_cli/management.py',
+            'stream',
+            '-',
+            '--dry-run'
+        ],
+        input=stream_file,
+        universal_newlines=True,
+        stdout=subprocess.PIPE
+    )
+
+
 # Streaming is heavily tied into Click and is impractical to test internally
 # Instead, a dry run is conducted that simulates a stream file
 def test_stream(mocker):
     stream_file = '{"operation":"list-content-types","arguments":{"space_id":"test-space","skip":null,"limit":null}}'
 
-    proc = subprocess.run([sys.executable, './contentful_cli/management.py', 'stream', '-', '--dry-run'], input=stream_file, universal_newlines=True, stdout=subprocess.PIPE)
+    proc = run_stream_command(stream_file)
 
     out = json.loads(proc.stdout)
 
@@ -179,7 +193,7 @@ def test_stream(mocker):
 def test_stream_with_data_argument(mocker):
     stream_file = '{"operation":"post-entry","arguments":{"space_id":"test-space","content_type":"typename","document_body": {}}}'
 
-    proc = subprocess.run([sys.executable, './contentful_cli/management.py', 'stream', '-', '--dry-run'], input=stream_file, universal_newlines=True, stdout=subprocess.PIPE)
+    proc = run_stream_command(stream_file)
 
     out = json.loads(proc.stdout)
 
@@ -191,7 +205,7 @@ def test_stream_with_data_argument(mocker):
 def test_stream_bad_command(mocker):
     stream_file = '{"operation":"obviously-fake-command","arguments":{}}'
 
-    proc = subprocess.run([sys.executable, './contentful_cli/management.py', 'stream', '-', '--dry-run'], input=stream_file, universal_newlines=True, stdout=subprocess.PIPE)
+    proc = run_stream_command(stream_file)
 
     out = json.loads(proc.stdout)
 
@@ -201,7 +215,7 @@ def test_stream_bad_command(mocker):
 def test_stream_bad_json(mocker):
     stream_file = 'obviously-invalid-json'
 
-    proc = subprocess.run([sys.executable, './contentful_cli/management.py', 'stream', '-', '--dry-run'], input=stream_file, universal_newlines=True, stdout=subprocess.PIPE)
+    proc = run_stream_command(stream_file)
 
     out = json.loads(proc.stdout)
 
