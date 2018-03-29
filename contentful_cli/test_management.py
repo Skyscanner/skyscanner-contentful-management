@@ -24,7 +24,7 @@ import subprocess
 
 from pprint import pprint
 
-from contentful import management
+from contentful_cli import management
 
 # Fixture for configuration
 config = configparser.ConfigParser()
@@ -167,7 +167,7 @@ def test_full_invoke(mocker):
 def test_stream(mocker):
     stream_file = '{"operation":"list-content-types","arguments":{"space_id":"test-space","skip":null,"limit":null}}'
 
-    proc = subprocess.run(['python', './contentful/management.py', 'stream', '-', '--dry-run'], input=stream_file, universal_newlines=True, stdout=subprocess.PIPE)
+    proc = subprocess.run(['python', './contentful_cli/management.py', 'stream', '-', '--dry-run'], input=stream_file, universal_newlines=True, stdout=subprocess.PIPE)
 
     out = json.loads(proc.stdout)
 
@@ -178,7 +178,7 @@ def test_stream(mocker):
 def test_stream_with_data_argument(mocker):
     stream_file = '{"operation":"post-entry","arguments":{"space_id":"test-space","content_type":"typename","document_body": {}}}'
 
-    proc = subprocess.run(['python', './contentful/management.py', 'stream', '-', '--dry-run'], input=stream_file, universal_newlines=True, stdout=subprocess.PIPE)
+    proc = subprocess.run(['python', './contentful_cli/management.py', 'stream', '-', '--dry-run'], input=stream_file, universal_newlines=True, stdout=subprocess.PIPE)
 
     out = json.loads(proc.stdout)
 
@@ -190,7 +190,7 @@ def test_stream_with_data_argument(mocker):
 def test_stream_bad_command(mocker):
     stream_file = '{"operation":"obviously-fake-command","arguments":{}}'
 
-    proc = subprocess.run(['python', './contentful/management.py', 'stream', '-', '--dry-run'], input=stream_file, universal_newlines=True, stdout=subprocess.PIPE)
+    proc = subprocess.run(['python', './contentful_cli/management.py', 'stream', '-', '--dry-run'], input=stream_file, universal_newlines=True, stdout=subprocess.PIPE)
 
     out = json.loads(proc.stdout)
 
@@ -200,7 +200,7 @@ def test_stream_bad_command(mocker):
 def test_stream_bad_json(mocker):
     stream_file = 'obviously-invalid-json'
 
-    proc = subprocess.run(['python', './contentful/management.py', 'stream', '-', '--dry-run'], input=stream_file, universal_newlines=True, stdout=subprocess.PIPE)
+    proc = subprocess.run(['python', './contentful_cli/management.py', 'stream', '-', '--dry-run'], input=stream_file, universal_newlines=True, stdout=subprocess.PIPE)
 
     out = json.loads(proc.stdout)
 
@@ -240,7 +240,7 @@ def test_when_streaming_429s_are_retried(
     ]
 
     # Make a full request
-    echo_output = mocker.patch('contentful.management.echo_output')
+    echo_output = mocker.patch('contentful_cli.management.echo_output')
     sleep = mocker.patch('time.sleep')
 
     endpoint.invoke_streaming(

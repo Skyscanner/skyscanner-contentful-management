@@ -19,11 +19,11 @@ setup(
     url='https://github.com/skyscanner/skyscanner-contentful-management',
     author='Travel Content Platform',
     author_email='TravelContentPlatformSquad@skyscanner.net',
-    version='1.0.0',
-    packages=['contentful'],
+    version='2.0.0',
+    packages=['contentful_cli'],
     entry_points={
         'console_scripts': [
-            'skyscanner-contentful-management = contentful.management:cli'
+            'skyscanner-contentful-management = contentful_cli.management:cli'
         ]
     },
     install_requires=[
