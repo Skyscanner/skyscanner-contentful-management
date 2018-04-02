@@ -1,6 +1,14 @@
 language: python
 python:
-  - 3.6
-  - nightly
+- 3.6
+- nightly
 script:
-  - pytest
+- pytest
+deploy:
+  provider: pypi
+  user: "skyscanner-parker"
+  password:
+    secure: v2bVnaql5s+3slRsFCwfq3v0C2rvFFL0+YAbSKWUXfDJMsMPRpzEzouFc/opgG2+nMpJoSqyyHRXZjvZb7yTmJnnHWksE1qUJTYkl5V0uE3St5GgKv1+ixZ1BHXbEntSHfvghXX/rquYYrEiTW90OP8WkXfljxkZ3NMVv8eO1W7PkvJEQlv+Dxj2kkGZewEdu5GwGzElXjGnpGclkBJ6f2o1Lr563y0rtc+qCnFsmoJdk+/ICc5KHEwbm5PI7565kUV6kk8cSrsxpDoWcdWKxuyq1JMcSsWKJmR2iXp6yjYOea7YquX/sNMnFtiE1JRLgbgeKb7/WzyDj2nYP/ZAm3iatBkTB1AQuJ2y/VixIR8viMHxDTzRNXyiH45+hDFqVmonC9SVCj9KtVRn9ujIjiWWKC+qO9crJ5ET/XAaJkWQfw+1jZFOdqWwuOuEI4vsHhSsGpRLAzD++MYp1yV6UlmhOrb21fl0UHRVVAa81tcpgheTytTBfti1yQte3Mkp/WpyaGhXv/UPwI0E/HTOwbNfpB7Dp5oJov7MW/UVUymWfh0ILquCnVFgUqd0o7EQgpzgaMwt1yHo28uNhPc0GigEpVAnWzT3jxT8sl797/rdAQT0YDEEqTGGhbFzS5C/dyRsSspPt72dYG0dBS8u7cqw5EQqtvHGkes0+lka6bU=
+  on:
+    branch: master
+    python: '3.6'
