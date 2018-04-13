@@ -112,7 +112,13 @@ CONTENTFUL_ENDPOINTS = [
     Endpoint('unpublish-asset',         'delete', 'api',    '/spaces/{space_id}/assets/{asset_id}/published',                      'EV'),
     Endpoint('archive-asset',           'put',    'api',    '/spaces/{space_id}/assets/{asset_id}/archived',                       'EV'),
     Endpoint('unarchive-asset',         'delete', 'api',    '/spaces/{space_id}/assets/{asset_id}/archived',                       'EV'),
+    # get-locales is mis-named. It should be list-locales. We should remove it in a future version.
     Endpoint('get-locales',             'get',    'api',    '/spaces/{space_id}/locales',                                          'E'),
+    Endpoint('list-locales',            'get',    'api',    '/spaces/{space_id}/locales/',                                         'Ec'),
+    Endpoint('post-locale',             'post',   'api',    '/spaces/{space_id}/locales/',                                         'ED'),
+    Endpoint('put-locale',              'put',    'api',    '/spaces/{space_id}/locales/{locale_id}',                              'ED'),
+    Endpoint('get-locale',              'get',    'api',    '/spaces/{space_id}/locales/{locale_id}',                              'E'),
+    Endpoint('delete-locale',           'delete', 'api',    '/spaces/{space_id}/locales/{locale_id}',                              'E'),
     Endpoint('get-environment',         'get',    'api',    '/spaces/{space_id}/environments/{environment_id}',                    ''),
     Endpoint('put-environment',         'put',    'api',    '/spaces/{space_id}/environments/{environment_id}',                    'D'),
     Endpoint('delete-environment',      'delete', 'api',    '/spaces/{space_id}/environments/{environment_id}',                    '!'),
