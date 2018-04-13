@@ -27,50 +27,69 @@ The tool takes an endpoint and any associated parameters as input.
 
 | command | arguments | flags |
 | -------- | -------- | -------- |
-| list-content-types | space_id | c |
-| put-content-type | space_id, content_type_id | Dv |
-| get-content-type | space_id, content_type_id |  |
-| put-content-type-editor | space_id, content_type_id | DV |
-| get-content-type-editor | space_id, content_type_id |  |
-| delete-content-type | space_id, content_type_id | V |
-| publish-content-type | space_id, content_type_id | V |
-| unpublish-content-type | space_id, content_type_id |  |
-| list-entries | space_id | ce |
-| post-entry | space_id | Dt |
-| put-entry | space_id, entry_id | Dtv |
-| get-entry | space_id, entry_id |  |
-| delete-entry | space_id, entry_id | V |
-| publish-entry | space_id, entry_id | V |
-| unpublish-entry | space_id, entry_id | V |
-| archive-entry | space_id, entry_id | V |
-| unarchive-entry | space_id, entry_id | V |
-| list-assets | space_id | ca |
-| post-asset | space_id | D |
-| put-asset | space_id, asset_id | Dv |
-| get-asset | space_id, asset_id |  |
-| delete-asset | space_id, asset_id | V |
-| process-asset | space_id, asset_id, locale | V |
-| publish-asset | space_id, asset_id | V |
-| unpublish-asset | space_id, asset_id | V |
-| archive-asset | space_id, asset_id | V |
-| unarchive-asset | space_id, asset_id | V |
-| get-locales | space_id |  |
-| list-spaces |  |  |
-| post-space |  | oD |
-| put-space | space_id | oD |
-| get-space | space_id |  |
-| delete-space | space_id | ! |
-| post-upload | space_id | B |
-| get-upload | space_id, upload_id |  |
-| delete-upload | space_id, upload_id |  |
-| post-webhook | space_id | D |
-| put-webhook | space_id, webhook_id | D |
-| get-webhook | space_id, webhook_id |  |
-| delete-webhook | space_id, webhook_id |  |
-| list-webhooks | space_id |  |
-| list-webhook-calls | space_id, webhook_id |  |
-| get-webhook-call | space_id, webhook_id, call_id |  |
-| get-webhook-health | space_id, webhook_id |  |
+| list-content-types      | --space-id                         | Ec   |
+| put-content-type        | --space-id --content-type-id       | EDv  |
+| get-content-type        | --space-id --content-type-id       | E    |
+| put-content-type-editor | --space-id --content-type-id       | EDV  |
+| get-content-type-editor | --space-id --content-type-id       | E    |
+| delete-content-type     | --space-id --content-type-id       | EV   |
+| publish-content-type    | --space-id --content-type-id       | EV   |
+| unpublish-content-type  | --space-id --content-type-id       | E    |
+| list-entries            | --space-id                         | Ece  |
+| post-entry              | --space-id                         | EDt  |
+| put-entry               | --space-id --entry-id              | EDtv |
+| get-entry               | --space-id --entry-id              | E    |
+| delete-entry            | --space-id --entry-id              | EV   |
+| publish-entry           | --space-id --entry-id              | EV   |
+| unpublish-entry         | --space-id --entry-id              | EV   |
+| archive-entry           | --space-id --entry-id              | EV   |
+| unarchive-entry         | --space-id --entry-id              | EV   |
+| list-assets             | --space-id                         | Eca  |
+| post-asset              | --space-id                         | ED   |
+| put-asset               | --space-id --asset-id              | EDv  |
+| get-asset               | --space-id --asset-id              | E    |
+| delete-asset            | --space-id --asset-id              | EV   |
+| process-asset           | --space-id --asset-id --locale     | EV   |
+| publish-asset           | --space-id --asset-id              | EV   |
+| unpublish-asset         | --space-id --asset-id              | EV   |
+| archive-asset           | --space-id --asset-id              | EV   |
+| unarchive-asset         | --space-id --asset-id              | EV   |
+| list-locales            | --space-id                         | Ec   |
+| post-locale             | --space-id                         | ED   |
+| put-locale              | --space-id --locale-id             | ED   |
+| get-locale              | --space-id --locale-id             | E    |
+| delete-locale           | --space-id --locale-id             | E    |
+| list-space-memberships  | --space-id                         | Ec   |
+| post-space-membership   | --space-id                         | ED   |
+| put-space-membership    | --space-id --membership-id         | ED   |
+| get-space-membership    | --space-id --membership-id         | E    |
+| delete-space-membership | --space-id --membership-id         | E    |
+| list-roles              | --space-id                         | Ec   |
+| post-role               | --space-id                         | ED   |
+| put-role                | --space-id --role-id               | ED   |
+| get-role                | --space-id --role-id               | E    |
+| delete-role             | --space-id --role-id               | E    |
+| get-environment         | --space-id --environment-id        |      |
+| put-environment         | --space-id --environment-id        | D    |
+| delete-environment      | --space-id --environment-id        | !    |
+| list-environments       | --space-id                         | c    |
+| list-spaces             |                                    |      |
+| post-space              |                                    | oD   |
+| put-space               | --space-id                         | oD   |
+| get-space               | --space-id                         |      |
+| delete-space            | --space-id                         | !    |
+| post-upload             | --space-id                         | B    |
+| get-upload              | --space-id --upload-id             |      |
+| delete-upload           | --space-id --upload-id             |      |
+| post-webhook            | --space-id                         | D    |
+| put-webhook             | --space-id --webhook-id            | D    |
+| get-webhook             | --space-id --webhook-id            |      |
+| delete-webhook          | --space-id --webhook-id            |      |
+| list-webhooks           | --space-id                         |      |
+| list-webhook-calls      | --space-id --webhook-id            |      |
+| get-webhook-call        | --space-id --webhook-id --call-id  |      |
+| get-webhook-health      | --space-id --webhook-id            |      |
+
 
 ### Flags
 Flags determine what type of data should be sent to Contentful accompanying the request (document, version number, content type, etc.)
@@ -87,6 +106,7 @@ Flags determine what type of data should be sent to Contentful accompanying the 
 | o | allows_organization | --organization | n/a |
 | ! | is_dangerous | --force or --no-force | n/a |
 | B | sends_binary | --document-file or --document-body | n/a |
+| E | environment-aware | --environment-id | n/a |
 
 
 ## Usage Examples
