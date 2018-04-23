@@ -68,6 +68,11 @@ def echo_output(obj, echo_to_stdout, log_file):
     if echo_to_stdout:
         print(s, flush=True)
 
+# Normally all field names appearing in endpoint path templates will be
+# converted into command-line options. However, special-case fields are
+# handled explicitly in code and so won't automatically produce command-line
+# options.
+SPECIAL_CASE_FIELDS = {'environment_path'}
 
 Endpoint = namedtuple('Endpoint', 'name method subdomain template flags')
 
@@ -82,36 +87,61 @@ Endpoint = namedtuple('Endpoint', 'name method subdomain template flags')
 #  o: optional organization ID
 #  B: binary document
 #  !: dangerous - such operations cannot be performed in streaming mode and require interactive confirmation
+#  E: environment-aware - requires --space-id and allows --environment-id.
+#                         environment_path will, depending on whether environment-id is provided, be either:
+#                         /spaces/{space_id}
+#                         or
+#                         /spaces/{space_id}/environments/{environment_id}
 
 CONTENTFUL_ENDPOINTS = [
-    Endpoint('list-content-types',      'get',    'api',    '/spaces/{space_id}/content_types/',                                   'c'),
-    Endpoint('put-content-type',        'put',    'api',    '/spaces/{space_id}/content_types/{content_type_id}',                  'Dv'),
-    Endpoint('get-content-type',        'get',    'api',    '/spaces/{space_id}/content_types/{content_type_id}',                  ''),
-    Endpoint('put-content-type-editor', 'put',    'api',    '/spaces/{space_id}/content_types/{content_type_id}/editor_interface', 'DV'),
-    Endpoint('get-content-type-editor', 'get',    'api',    '/spaces/{space_id}/content_types/{content_type_id}/editor_interface', ''),
-    Endpoint('delete-content-type',     'delete', 'api',    '/spaces/{space_id}/content_types/{content_type_id}',                  'V'),
-    Endpoint('publish-content-type',    'put',    'api',    '/spaces/{space_id}/content_types/{content_type_id}/published',        'V'),
-    Endpoint('unpublish-content-type',  'delete', 'api',    '/spaces/{space_id}/content_types/{content_type_id}/published',        ''),
-    Endpoint('list-entries',            'get',    'api',    '/spaces/{space_id}/entries/',                                         'ce'),
-    Endpoint('post-entry',              'post',   'api',    '/spaces/{space_id}/entries/',                                         'Dt'),
-    Endpoint('put-entry',               'put',    'api',    '/spaces/{space_id}/entries/{entry_id}',                               'Dtv'),
-    Endpoint('get-entry',               'get',    'api',    '/spaces/{space_id}/entries/{entry_id}',                               ''),
-    Endpoint('delete-entry',            'delete', 'api',    '/spaces/{space_id}/entries/{entry_id}',                               'V'),
-    Endpoint('publish-entry',           'put',    'api',    '/spaces/{space_id}/entries/{entry_id}/published',                     'V'),
-    Endpoint('unpublish-entry',         'delete', 'api',    '/spaces/{space_id}/entries/{entry_id}/published',                     'V'),
-    Endpoint('archive-entry',           'put',    'api',    '/spaces/{space_id}/entries/{entry_id}/archived',                      'V'),
-    Endpoint('unarchive-entry',         'delete', 'api',    '/spaces/{space_id}/entries/{entry_id}/archived',                      'V'),
-    Endpoint('list-assets',             'get',    'api',    '/spaces/{space_id}/assets/',                                          'ca'),
-    Endpoint('post-asset',              'post',   'api',    '/spaces/{space_id}/assets/',                                          'D'),
-    Endpoint('put-asset',               'put',    'api',    '/spaces/{space_id}/assets/{asset_id}',                                'Dv'),
-    Endpoint('get-asset',               'get',    'api',    '/spaces/{space_id}/assets/{asset_id}',                                ''),
-    Endpoint('delete-asset',            'delete', 'api',    '/spaces/{space_id}/assets/{asset_id}',                                'V'),
-    Endpoint('process-asset',           'put',    'api',    '/spaces/{space_id}/assets/{asset_id}/files/{locale}/process',         'V'),
-    Endpoint('publish-asset',           'put',    'api',    '/spaces/{space_id}/assets/{asset_id}/published',                      'V'),
-    Endpoint('unpublish-asset',         'delete', 'api',    '/spaces/{space_id}/assets/{asset_id}/published',                      'V'),
-    Endpoint('archive-asset',           'put',    'api',    '/spaces/{space_id}/assets/{asset_id}/archived',                       'V'),
-    Endpoint('unarchive-asset',         'delete', 'api',    '/spaces/{space_id}/assets/{asset_id}/archived',                       'V'),
-    Endpoint('get-locales',             'get',    'api',    '/spaces/{space_id}/locales',                                          ''),
+    Endpoint('list-content-types',      'get',    'api',    '{environment_path}/content_types/',                                   'Ec'),
+    Endpoint('put-content-type',        'put',    'api',    '{environment_path}/content_types/{content_type_id}',                  'EDv'),
+    Endpoint('get-content-type',        'get',    'api',    '{environment_path}/content_types/{content_type_id}',                  'E'),
+    Endpoint('put-content-type-editor', 'put',    'api',    '{environment_path}/content_types/{content_type_id}/editor_interface', 'EDV'),
+    Endpoint('get-content-type-editor', 'get',    'api',    '{environment_path}/content_types/{content_type_id}/editor_interface', 'E'),
+    Endpoint('delete-content-type',     'delete', 'api',    '{environment_path}/content_types/{content_type_id}',                  'EV'),
+    Endpoint('publish-content-type',    'put',    'api',    '{environment_path}/content_types/{content_type_id}/published',        'EV'),
+    Endpoint('unpublish-content-type',  'delete', 'api',    '{environment_path}/content_types/{content_type_id}/published',        'E'),
+    Endpoint('list-entries',            'get',    'api',    '{environment_path}/entries/',                                         'Ece'),
+    Endpoint('post-entry',              'post',   'api',    '{environment_path}/entries/',                                         'EDt'),
+    Endpoint('put-entry',               'put',    'api',    '{environment_path}/entries/{entry_id}',                               'EDtv'),
+    Endpoint('get-entry',               'get',    'api',    '{environment_path}/entries/{entry_id}',                               'E'),
+    Endpoint('delete-entry',            'delete', 'api',    '{environment_path}/entries/{entry_id}',                               'EV'),
+    Endpoint('publish-entry',           'put',    'api',    '{environment_path}/entries/{entry_id}/published',                     'EV'),
+    Endpoint('unpublish-entry',         'delete', 'api',    '{environment_path}/entries/{entry_id}/published',                     'EV'),
+    Endpoint('archive-entry',           'put',    'api',    '{environment_path}/entries/{entry_id}/archived',                      'EV'),
+    Endpoint('unarchive-entry',         'delete', 'api',    '{environment_path}/entries/{entry_id}/archived',                      'EV'),
+    Endpoint('list-assets',             'get',    'api',    '{environment_path}/assets/',                                          'Eca'),
+    Endpoint('post-asset',              'post',   'api',    '{environment_path}/assets/',                                          'ED'),
+    Endpoint('put-asset',               'put',    'api',    '{environment_path}/assets/{asset_id}',                                'EDv'),
+    Endpoint('get-asset',               'get',    'api',    '{environment_path}/assets/{asset_id}',                                'E'),
+    Endpoint('delete-asset',            'delete', 'api',    '{environment_path}/assets/{asset_id}',                                'EV'),
+    Endpoint('process-asset',           'put',    'api',    '{environment_path}/assets/{asset_id}/files/{locale}/process',         'EV'),
+    Endpoint('publish-asset',           'put',    'api',    '{environment_path}/assets/{asset_id}/published',                      'EV'),
+    Endpoint('unpublish-asset',         'delete', 'api',    '{environment_path}/assets/{asset_id}/published',                      'EV'),
+    Endpoint('archive-asset',           'put',    'api',    '{environment_path}/assets/{asset_id}/archived',                       'EV'),
+    Endpoint('unarchive-asset',         'delete', 'api',    '{environment_path}/assets/{asset_id}/archived',                       'EV'),
+    # get-locales is mis-named. It should be list-locales. We should remove it in a future version.
+    Endpoint('get-locales',             'get',    'api',    '{environment_path}/locales',                                          'E'),
+    Endpoint('list-locales',            'get',    'api',    '{environment_path}/locales/',                                         'Ec'),
+    Endpoint('post-locale',             'post',   'api',    '{environment_path}/locales/',                                         'ED'),
+    Endpoint('put-locale',              'put',    'api',    '{environment_path}/locales/{locale_id}',                              'ED'),
+    Endpoint('get-locale',              'get',    'api',    '{environment_path}/locales/{locale_id}',                              'E'),
+    Endpoint('delete-locale',           'delete', 'api',    '{environment_path}/locales/{locale_id}',                              'E'),
+    Endpoint('list-space-memberships',  'get',    'api',    '{environment_path}/space_memberships/',                               'Ec'),
+    Endpoint('post-space-membership',   'post',   'api',    '{environment_path}/space_memberships/',                               'ED'),
+    Endpoint('put-space-membership',    'put',    'api',    '{environment_path}/space_memberships/{membership_id}',                'ED'),
+    Endpoint('get-space-membership',    'get',    'api',    '{environment_path}/space_memberships/{membership_id}',                'E'),
+    Endpoint('delete-space-membership', 'delete', 'api',    '{environment_path}/space_memberships/{membership_id}',                'E'),
+    Endpoint('list-roles',              'get',    'api',    '{environment_path}/roles/',                                           'Ec'),
+    Endpoint('post-role',               'post',   'api',    '{environment_path}/roles/',                                           'ED'),
+    Endpoint('put-role',                'put',    'api',    '{environment_path}/roles/{role_id}',                                  'ED'),
+    Endpoint('get-role',                'get',    'api',    '{environment_path}/roles/{role_id}',                                  'E'),
+    Endpoint('delete-role',             'delete', 'api',    '{environment_path}/roles/{role_id}',                                  'E'),
+    Endpoint('get-environment',         'get',    'api',    '/spaces/{space_id}/environments/{environment_id}',                    ''),
+    Endpoint('put-environment',         'put',    'api',    '/spaces/{space_id}/environments/{environment_id}',                    'D'),
+    Endpoint('delete-environment',      'delete', 'api',    '/spaces/{space_id}/environments/{environment_id}',                    '!'),
+    Endpoint('list-environments',       'get',    'api',    '/spaces/{space_id}/environments/',                                    'c'),
     Endpoint('list-spaces',             'get',    'api',    '/spaces/',                                                            ''),
     Endpoint('post-space',              'post',   'api',    '/spaces/',                                                            'oD'),
     Endpoint('put-space',               'put',    'api',    '/spaces/{space_id}',                                                  'oD'),
@@ -159,7 +189,8 @@ def construct_endpoint(endpoint_spec):
         is_asset_collection='a' in endpoint_spec.flags,
         allows_organization='o' in endpoint_spec.flags,
         is_dangerous='!' in endpoint_spec.flags,
-        sends_binary='B' in endpoint_spec.flags
+        sends_binary='B' in endpoint_spec.flags,
+        environment_aware='E' in endpoint_spec.flags,
     )
 
 
@@ -190,7 +221,8 @@ class ContentfulEndpoint:
                  is_asset_collection,
                  allows_organization,
                  is_dangerous,
-                 sends_binary):
+                 sends_binary,
+                 environment_aware):
         self.name = name
         self.method = method
         self.subdomain = subdomain
@@ -205,10 +237,13 @@ class ContentfulEndpoint:
         self.allows_organization = allows_organization
         self.is_dangerous = is_dangerous
         self.sends_binary = sends_binary
+        self.environment_aware = environment_aware
 
     def build_command(self):
         parameters = []
         for field_name in extract_template_field_names(self.template):
+            if field_name in SPECIAL_CASE_FIELDS:
+                continue
             option_name = optionify(field_name)
             parameters.append(click.Option([option_name], required=True))
         if self.allows_version:
@@ -240,6 +275,9 @@ class ContentfulEndpoint:
             parameters.append(click.Option(['--organization', 'organization'], required=True))
         if self.is_dangerous:
             parameters.append(click.Option(['--force/--no-force']))
+        if self.environment_aware:
+            parameters.append(click.Option(['--space-id'], required=True))
+            parameters.append(click.Option(['--environment-id']))
 
         parameters.append(click.Option(['--prepare-stream/--no-prepare-stream']))
         parameters.append(click.Option(['--oauth-token'], envvar='CONTENTFUL_OAUTH_TOKEN', required=True))
@@ -392,8 +430,24 @@ class ContentfulEndpoint:
             return config['base_url'][self.subdomain]
         raise Exception('No suitable contentful-api-gateway endpoint for Contentful subdomain {}'.format(self.subdomain))
 
+    def expand_path(self, arguments):
+        templating_arguments = dict(arguments)
+        if self.environment_aware:
+            environment_provided = arguments.get('environment_id') is not None
+            environment_template = (
+                '/spaces/{space_id}/environments/{environment_id}'
+                if environment_provided else
+                '/spaces/{space_id}'
+            )
+            templating_arguments['environment_path'] = (
+                environment_template.format(**arguments)
+            )
+        return self.template.format(**templating_arguments)
+
     def invoke(self, arguments, session, oauth_token, gateway_api_key, run=True):
-        expanded_path = self.template.format(**arguments)
+
+        expanded_path = self.expand_path(arguments)
+
         url = '{base_url}{expanded_path}'.format(
             base_url=self.construct_base_url(),
             expanded_path=expanded_path)

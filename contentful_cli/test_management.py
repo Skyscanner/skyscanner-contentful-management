@@ -26,6 +26,9 @@ import subprocess
 from pprint import pprint
 
 from contentful_cli import management
+from contentful_cli.management import Endpoint, construct_endpoint
+
+from unittest.mock import ANY
 
 # Fixture for configuration
 config = configparser.ConfigParser()
@@ -40,6 +43,17 @@ class FakeResponse:
         self.url = url
         self.status_code = status_code
         self.headers = {} if headers is None else headers
+
+
+@pytest.fixture
+def mock_session(mocker):
+    return mocker.Mock()
+
+
+def create_endpoint_for_test(spec, mocker):
+    endpoint = management.construct_endpoint(spec)
+    mocker.patch.object(endpoint, 'construct_config', return_value=config)
+    return endpoint
 
 
 def test_contruct_api_url(mocker):
@@ -161,6 +175,36 @@ def test_full_invoke(mocker):
     assert args[0] == 'get'
     assert args[1] == 'https://fakeapi/sample'
     assert kwargs['params'] == {}
+
+
+@pytest.fixture
+def environment_aware_endpoint(mocker):
+    spec = Endpoint('sample', 'get', 'api', '{environment_path}/sample', 'E')
+    return create_endpoint_for_test(spec, mocker)
+
+
+def test_when_endpoint_is_environment_aware_and_environment_is_provided_url_includes_environment(
+        mock_session,
+        environment_aware_endpoint):
+
+    environment_aware_endpoint.invoke(
+        {'space_id':'spc1', 'environment_id':'env1'},
+        mock_session, "test-key", "")
+
+    mock_session.request.assert_called_with(
+        'get', 'https://fakeapi/spaces/spc1/environments/env1/sample',
+        data=None, headers=ANY, params={})
+
+
+def test_when_endpoint_is_environment_aware_and_environment_is_not_provided_url_does_not_include_environment(
+        mock_session,
+        environment_aware_endpoint):
+
+    environment_aware_endpoint.invoke(
+        {'space_id':'spc1'}, mock_session, "test-key", "")
+
+    mock_session.request.assert_called_with(
+        'get', 'https://fakeapi/spaces/spc1/sample', data=None, headers=ANY, params={})
 
 
 def run_stream_command(stream_file):
