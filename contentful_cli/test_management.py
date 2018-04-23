@@ -27,6 +27,8 @@ from pprint import pprint
 
 from contentful_cli import management
 
+from unittest.mock import ANY
+
 # Fixture for configuration
 config = configparser.ConfigParser()
 config['base_url'] = {}
@@ -161,6 +163,30 @@ def test_full_invoke(mocker):
     assert args[0] == 'get'
     assert args[1] == 'https://fakeapi/sample'
     assert kwargs['params'] == {}
+
+
+def test_when_endpoint_is_environment_aware_and_environment_is_provided_url_includes_environment(mocker):
+    endpoint_spec = management.Endpoint('sample', 'get', 'api', '{environment_path}/sample', 'E')
+    endpoint = management.construct_endpoint(endpoint_spec)
+    mocker.patch.object(endpoint, 'construct_config', return_value=config)
+    session = mocker.Mock()
+
+    endpoint.invoke({'space_id':'spc1', 'environment_id':'env1'}, session, "test-key", "")
+
+    session.request.assert_called_with(
+        'get', 'https://fakeapi/spaces/spc1/environments/env1/sample', data=None, headers=ANY, params={})
+
+
+def test_when_endpoint_is_environment_aware_and_environment_is_not_provided_url_does_not_include_environment(mocker):
+    endpoint_spec = management.Endpoint('sample', 'get', 'api', '{environment_path}/sample', 'E')
+    endpoint = management.construct_endpoint(endpoint_spec)
+    mocker.patch.object(endpoint, 'construct_config', return_value=config)
+    session = mocker.Mock()
+
+    endpoint.invoke({'space_id':'spc1'}, session, "test-key", "")
+
+    session.request.assert_called_with(
+        'get', 'https://fakeapi/spaces/spc1/sample', data=None, headers=ANY, params={})
 
 
 def run_stream_command(stream_file):
