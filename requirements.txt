@@ -1,4 +1,4 @@
 click==7.0
 pytest==4.6.3
 pytest-mock==1.10.4
-requests==2.22.0
+requests==2.31.0
